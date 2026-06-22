@@ -4,7 +4,7 @@ const Client = require("./models/user.model");
 const conenctDB = require("./config/database");
 const dns = require("dns/promises");
 const { errorMonitor } = require("events");
-const { updateValidation } = require("./Utils/validations");
+const { validateSignUpData, updateValidation } = require("./Utils/validations");
 
 // Setting up DNS locally
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
@@ -17,6 +17,9 @@ app.use(express.json());
 
 //post /user
 app.post("/user", async (req, res, next) => {
+  // Validation for registering user
+  validateSignUpData(req);
+
   try {
     const user = await Client(req.body).save();
     res.send(user);

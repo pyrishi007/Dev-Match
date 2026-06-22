@@ -10,7 +10,7 @@ const clientSchema = new mongoose.Schema(
   {
     firstname: {
       type: String,
-      required: true,
+      required: true
     },
 
     lastname: {
@@ -44,13 +44,6 @@ const clientSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
-      minLength: 8, //minimum characters are 10
-      validate(value) {
-        if (!PASSWORD_REGEX.test(value))
-          throw new Error(
-            "Password must contain uppercase, lowercase, number, special character, and minimum 8 characters.",
-          );
-      },
     },
 
     age: {
