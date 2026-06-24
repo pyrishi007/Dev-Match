@@ -1,6 +1,6 @@
 # User Management API — Production Documentation
 
-**Version:** 1.0.0  
+**Version:** 1.1.0  
 **Base URL:** `http://<host>:4000`  
 **Protocol:** HTTP/HTTPS  
 **Data Format:** JSON
@@ -52,6 +52,7 @@ project-root/
 │   └── user.model.js       # Mongoose schema and model (Client)
 └── Utils/
     ├── CONSTANTS.js         # Regex patterns and allowed value lists
+    ├── password.js          # Password hashing utility (bcrypt)
     └── validations.js       # Application-level validation functions
 ```
 
@@ -65,6 +66,9 @@ Express Router (app.js)
      │
      ▼
 Application Validation (Utils/validations.js)   ← runs before DB ops
+     │
+     ▼
+Password Hashing (Utils/password.js)            ← POST /user only
      │
      ▼
 Mongoose Model / DB Operation (models/user.model.js)
@@ -123,9 +127,10 @@ Defined in `models/user.model.js` via `clientSchema`.
 |---|---|---|---|---|
 | `firstname` | String | ✅ | — | Min 4 characters (app-level) |
 | `lastname` | String | — | — | Min 4 characters if provided (app-level) |
+| `dob` | Date/String | — | — | Date of birth; no schema-level constraint currently |
 | `number` | String | ✅ | ✅ | Must match `/^\d{10}$/` — exactly 10 digits |
 | `email` | String | ✅ | — | Lowercase, trimmed, must match email regex; must be unique (app-level check) |
-| `password` | String | ✅ | — | Must pass `validator.isStrongPassword()` (app-level) |
+| `password` | String | ✅ | — | Must pass `validator.isStrongPassword()` (app-level); stored as bcrypt hash |
 | `age` | Number | ✅ | — | Minimum value: `18` |
 | `gender` | String | ✅ | — | Must be one of: `"male"`, `"female"`, `"other"` (case-insensitive) |
 | `profileURL` | String | — | — | Defaults to `"URL"` if not provided |
@@ -140,6 +145,7 @@ Defined in `models/user.model.js` via `clientSchema`.
   "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
   "firstname": "Rohit",
   "lastname": "Sharma",
+  "dob": "1999-05-15",
   "number": "9876543210",
   "email": "rohit@example.com",
   "password": "$2b$10$hashedpassword",
@@ -175,7 +181,7 @@ Executed before any database operation. Errors thrown here propagate to the glob
 
 > `validator.isStrongPassword()` defaults: min 8 chars, at least 1 lowercase, 1 uppercase, 1 number, 1 symbol.
 
-#### On PATCH `/user/:userId` — `updateValidation(req)`
+#### On PATCH `/user/:id` — `updateValidation(req)`
 
 Only fields in `ALLOWED_UPDATE` may be patched.
 
@@ -212,6 +218,7 @@ Runs during `.save()` and `.findByIdAndUpdate()` (when `runValidators: true` is 
 {
   "firstname": "Rohit",
   "lastname": "Sharma",
+  "dob": "1999-05-15",
   "number": "9876543210",
   "email": "rohit@example.com",
   "password": "Secure@123",
@@ -222,9 +229,14 @@ Runs during `.save()` and `.findByIdAndUpdate()` (when `runValidators: true` is 
 }
 ```
 
+**Processing order (inside try/catch):**
+1. `SignUpValidation(req)` — runs all application-level checks
+2. `encrptPassword(password)` — hashes the plaintext password via `Utils/password.js`
+3. `Client({...}).save()` — persists the document with the hashed password
+
 **Success Response — `200 OK`:**
 
-Returns the saved Mongoose document (full object including `_id`, `createdAt`, `updatedAt`).
+Returns the saved Mongoose document (full object including `_id`, `createdAt`, `updatedAt`). The `password` field in the response will be the bcrypt hash, not the plaintext value.
 
 **Error Responses:**
 
@@ -253,14 +265,14 @@ Returns an empty array `[]` if no users exist.
 
 ---
 
-### GET `/user/id/:userId`
+### GET `/user/id/:id`
 **Retrieve a user by MongoDB ObjectId**
 
 **URL Parameter:**
 
 | Param | Type | Description |
 |---|---|---|
-| `userId` | String | Valid MongoDB ObjectId |
+| `id` | String | Valid MongoDB ObjectId |
 
 **Success Response — `200 OK`:** The user document, or `null` if not found.
 
@@ -272,27 +284,27 @@ Returns an empty array `[]` if no users exist.
 
 ---
 
-### GET `/user/email/:userEmail`
+### GET `/user/email/:email`
 **Retrieve a user by email address**
 
 **URL Parameter:**
 
 | Param | Type | Description |
 |---|---|---|
-| `userEmail` | String | Email address of the user |
+| `email` | String | Email address of the user |
 
 **Success Response — `200 OK`:** The user document, or `null` if not found.
 
 ---
 
-### DELETE `/user/:userId`
+### DELETE `/user/:id`
 **Delete a user by MongoDB ObjectId**
 
 **URL Parameter:**
 
 | Param | Type | Description |
 |---|---|---|
-| `userId` | String | Valid MongoDB ObjectId |
+| `id` | String | Valid MongoDB ObjectId |
 
 **Success Response — `200 OK`:**
 
@@ -304,14 +316,14 @@ Returns `null` in the message if no user was found with that ID (no error thrown
 
 ---
 
-### PATCH `/user/:userId`
+### PATCH `/user/:id`
 **Partially update a user by MongoDB ObjectId**
 
 **URL Parameter:**
 
 | Param | Type | Description |
 |---|---|---|
-| `userId` | String | Valid MongoDB ObjectId |
+| `id` | String | Valid MongoDB ObjectId |
 
 **Request Body** (only allowed fields):
 
@@ -330,8 +342,15 @@ Returns `null` in the message if no user was found with that ID (no error thrown
 
 **Success Response — `200 OK`:**
 
-```
-User successfully updated : { _id: '...', firstname: 'UpdatedName', ... }
+Returns the updated Mongoose document as a JSON object (not a string):
+
+```json
+{
+  "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
+  "firstname": "UpdatedName",
+  "age": 30,
+  ...
+}
 ```
 
 **Error Responses:**
@@ -379,8 +398,6 @@ Error: ERROR
 Error Message: Update not allowed
 ```
 
-> **Note:** Errors thrown in `SignUpValidation` before the `try/catch` block will not be caught by `next(err)` and will result in an unhandled promise rejection. See [Known Limitations](#known-limitations--improvements).
-
 ---
 
 ## Constants & Configuration
@@ -409,9 +426,9 @@ dns.setServers(["1.1.1.1", "8.8.8.8"]); // Cloudflare, Google
 
 The following are **current gaps** that must be addressed before deploying to production:
 
-| Issue | Risk | Recommended Fix |
+| Issue | Risk | Status |
 |---|---|---|
-| Passwords stored in plaintext | 🔴 Critical | Hash passwords with `bcrypt` before saving |
+| ~~Passwords stored in plaintext~~ | ~~🔴 Critical~~ | ✅ Fixed — bcrypt hashing via `Utils/password.js` |
 | No authentication/authorization | 🔴 Critical | Add JWT or session-based auth middleware |
 | `GET /user` returns all users | 🟠 High | Add pagination and restrict to admin roles |
 | `email` not enforced unique at DB level | 🟠 High | Add `unique: true` to the email field in schema |
@@ -425,28 +442,16 @@ The following are **current gaps** that must be addressed before deploying to pr
 
 ## Known Limitations & Improvements
 
-### Bug: Unhandled Validation Errors on POST
+### ✅ Fixed: Unhandled Validation Errors on POST
 
-In `app.post("/user")`, `SignUpValidation(req)` is called **outside** the `try/catch` block:
-
-```javascript
-app.post("/user", async (req, res, next) => {
-  await SignUpValidation(req); // ← errors here are NOT caught
-  try {
-    ...
-  } catch (err) {
-    next(err);
-  }
-});
-```
-
-**Fix:** Wrap the entire handler body in the `try/catch`, or add a `.catch(next)` call:
+Previously `SignUpValidation(req)` was called outside the `try/catch` block, causing unhandled promise rejections. This has been resolved — the full handler is now wrapped in a single try/catch:
 
 ```javascript
 app.post("/user", async (req, res, next) => {
   try {
     await SignUpValidation(req);
-    const user = await Client(req.body).save();
+    const hashPassword = await encrptPassword(req.body.password);
+    const user = await Client({ ...fields, password: hashPassword }).save();
     res.send(user);
   } catch (err) {
     next(err);
