@@ -7,7 +7,7 @@ const { errorMonitor } = require("events");
 const { SignUpValidation, updateValidation } = require("./Utils/validations");
 
 // Setting up DNS locally
-dns.setServers(["1.1.1.1", "8.8.8.8"]);
+dns.setServers(["1.1.1.1", "8.8.8.8"])
 
 const app = express();
 const PORT = 4000;
