@@ -17,6 +17,10 @@ const clientSchema = new mongoose.Schema(
       type: String,
     },
 
+    dob: {
+      type: Date,
+    },
+
     number: {
       type: String,
       required: true,

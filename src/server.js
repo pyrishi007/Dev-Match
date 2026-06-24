@@ -3,11 +3,12 @@ const errorHandler = require("./middleware/errorHandler");
 const Client = require("./models/user.model");
 const conenctDB = require("./config/database");
 const dns = require("dns/promises");
+const encrptPassword = require("./Utils/password");
 const { errorMonitor } = require("events");
 const { SignUpValidation, updateValidation } = require("./Utils/validations");
 
 // Setting up DNS locally
-dns.setServers(["1.1.1.1", "8.8.8.8"])
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 const app = express();
 const PORT = 4000;
@@ -17,12 +18,40 @@ app.use(express.json());
 
 //post /user
 app.post("/user", async (req, res, next) => {
-  // Validation for registering user
-  await SignUpValidation(req);
+  //Extracting SignUp data
+  const {
+    firstname,
+    lastname,
+    dob,
+    number,
+    email,
+    password,
+    age,
+    gender,
+    profileURL,
+    skills,
+  } = req?.body;
 
-  //
   try {
-    const user = await Client(req.body).save();
+    //Validation checks for SignUp
+    await SignUpValidation(req);
+
+    //Password hashing & encryption
+    const hashPassword = await encrptPassword(req.body.password);
+
+    //Final data storing
+    const user = await Client({
+      firstname,
+      lastname,
+      dob,
+      number,
+      email,
+      password: hashPassword, //saving hash password
+      age,
+      gender,
+      profileURL,
+      skills,
+    }).save();
     res.send(user);
   } catch (err) {
     next(err);
@@ -41,9 +70,9 @@ app.get("/user", async (req, res, next) => {
 });
 
 // get /user/id/:userId
-app.get("/user/id/:userId", async (req, res, next) => {
+app.get("/user/id/:id", async (req, res, next) => {
   try {
-    const user = await Client.findById(req.params.userId);
+    const user = await Client.findById(req.params.id);
     res.send(user);
   } catch (err) {
     next(err);
@@ -51,9 +80,9 @@ app.get("/user/id/:userId", async (req, res, next) => {
 });
 
 // get /user/email/:userEmail
-app.get("/user/email/:userEmail", async (req, res, next) => {
+app.get("/user/email/:email", async (req, res, next) => {
   try {
-    const user = await Client.findOne({ email: req.params.userEmail });
+    const user = await Client.findOne({ email: req.params.email });
     res.send(user);
   } catch (err) {
     next(err);
@@ -61,27 +90,27 @@ app.get("/user/email/:userEmail", async (req, res, next) => {
 });
 
 //delete /user/:userId
-app.delete("/user/:userId", async (req, res, next) => {
+app.delete("/user/:id", async (req, res, next) => {
   try {
-    const deletedUser = await Client.findByIdAndDelete(req.params.userId);
+    const deletedUser = await Client.findByIdAndDelete(req.params.id);
     res.send(`User successfully deleted : ${deletedUser}`);
   } catch (err) {
     next(err);
   }
 });
 
-//patch /user/:userId
-app.patch("/user/:userId", async (req, res, next) => {
+//patch /user/:id
+app.patch("/user/:id", async (req, res, next) => {
   try {
-    // Check for update policy and restrictions
+    //Validation checks for ALLOWED_UPDATE
     updateValidation(req);
 
     const updatedClient = await Client.findByIdAndUpdate(
-      req.params.userId,
+      req.params.id,
       req.body,
       { returnDocument: "after", runValidators: true },
     );
-    res.send(`User successfully updated : ${updatedClient}`);
+    res.send(updatedClient);
   } catch (err) {
     next(err);
   }
