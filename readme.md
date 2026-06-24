@@ -1,34 +1,42 @@
 # User Management REST API
 
-A RESTful CRUD API built using **Node.js**, **Express.js**, **MongoDB**, and **Mongoose**. This project demonstrates backend development concepts such as data validation, schema design, error handling, update restrictions, and MongoDB integration.
+A production-inspired RESTful API built with **Node.js**, **Express.js**, **MongoDB**, and **Mongoose**.
+
+This project demonstrates backend development fundamentals including CRUD operations, schema validation, custom business validations, centralized error handling, update restrictions, and database integration.
 
 ---
 
-# Features
+## Features
 
 * Create User
 * Fetch All Users
-* Update User
+* Fetch User by ID
+* Fetch User by Email
+* Update User Information
 * Delete User
+* Custom Validation Logic
 * Mongoose Schema Validation
-* Custom Regex Validation
+* Restricted Field Updates
 * Global Error Handling Middleware
-* Restricted User Updates
-* MongoDB Integration
-* Timestamps Support
+* MongoDB Atlas Integration
+* Automatic Timestamps
 
 ---
 
-# Tech Stack
+## Tech Stack
 
-* Node.js
-* Express.js
-* MongoDB
-* Mongoose
+| Technology   | Purpose               |
+| ------------ | --------------------- |
+| Node.js      | Runtime Environment   |
+| Express.js   | Backend Framework     |
+| MongoDB      | NoSQL Database        |
+| Mongoose     | ODM for MongoDB       |
+| Validator.js | Password Validation   |
+| dotenv       | Environment Variables |
 
 ---
 
-# Project Structure
+## Project Architecture
 
 ```text
 src
@@ -51,7 +59,7 @@ src
 
 ---
 
-# Installation
+## Installation
 
 Clone the repository
 
@@ -71,27 +79,46 @@ Install dependencies
 npm install
 ```
 
-Start server
+Create a `.env` file
+
+```env
+mongoStr=your_mongodb_connection_string
+```
+
+Run the application
 
 ```bash
 npm run dev
 ```
 
+Server runs on:
+
+```text
+http://localhost:4000
+```
+
 ---
 
-# API Endpoints
+## API Endpoints
 
-## Create User
+| Method | Endpoint               | Description       |
+| ------ | ---------------------- | ----------------- |
+| POST   | /user                  | Create User       |
+| GET    | /user                  | Get All Users     |
+| GET    | /user/id/:userId       | Get User By ID    |
+| GET    | /user/email/:userEmail | Get User By Email |
+| PATCH  | /user/:userId          | Update User       |
+| DELETE | /user/:userId          | Delete User       |
 
-Creates a new user.
+---
 
-### Request
+## Sample Request
+
+### Create User
 
 ```http
 POST /user
 ```
-
-### Sample Body
 
 ```json
 {
@@ -108,307 +135,163 @@ POST /user
 
 ---
 
-## Get All Users
+## Validation Strategy
 
-Returns all users stored in MongoDB.
+The application uses a combination of:
 
-### Request
+### Route-Level Validation
 
-```http
-GET /user
+Business rules are validated before database operations:
+
+* Duplicate email detection
+* Strong password enforcement
+* Firstname and lastname validation
+* Update field restrictions
+
+### Schema-Level Validation
+
+Database integrity is enforced using Mongoose:
+
+* Required fields
+* Email format validation
+* Phone number validation
+* Gender validation
+* Minimum age validation
+* Automatic string formatting
+
+This layered approach helps prevent invalid or polluted data from entering the database.
+
+---
+
+## Custom Validators
+
+### Phone Number Validation
+
+```javascript
+const NUMBEREGEX = /^\d{10}$/;
+```
+
+### Email Validation
+
+```javascript
+const EMAILREGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+```
+
+### Allowed Gender Values
+
+```javascript
+const ALLOWED_GENDER_VALUES = [
+  "male",
+  "female",
+  "other"
+];
 ```
 
 ---
 
-## Update User
+## Update Restrictions
 
-Updates allowed user fields.
-
-### Request
-
-```http
-PATCH /user/:userId
-```
-
-### Allowed Update Fields
+Only selected fields can be updated:
 
 ```javascript
 const ALLOWED_UPDATE = [
   "firstname",
   "age",
   "profileURL",
-  "skills",
+  "skills"
 ];
 ```
 
-### Example
-
-```json
-{
-  "age": 25,
-  "skills": ["ExpressJS", "MongoDB"]
-}
-```
-
----
-
-## Delete User
-
-Deletes a user by MongoDB ObjectId.
-
-### Request
-
-```http
-DELETE /user/:userId
-```
-
----
-
-# User Schema
-
-```javascript
-{
-  firstname: String,
-  lastname: String,
-  number: String,
-  email: String,
-  password: String,
-  age: Number,
-  gender: String,
-  profileURL: String,
-  skills: [String]
-}
-```
-
----
-
-# Validation Rules
-
-## Phone Number Validation
-
-Only 10-digit phone numbers are accepted.
-
-```javascript
-const NUMBEREGEX = /^\d{10}$/;
-```
-
-### Valid
-
-```text
-9876543210
-```
-
-### Invalid
-
-```text
-98765
-abcd123456
-```
-
----
-
-## Email Validation
-
-Validates email format.
-
-```javascript
-const EMAILREGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-```
-
-### Valid
-
-```text
-rohit@gmail.com
-```
-
-### Invalid
-
-```text
-rohitgmail.com
-rohit@
-```
-
----
-
-## Password Validation
-
-Password must contain:
-
-* At least one uppercase letter
-* At least one lowercase letter
-* At least one number
-* At least one special character
-* Minimum 8 characters
-
-```javascript
-const PASSWORD_REGEX =
-/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-```
-
-### Valid
-
-```text
-Rohit@123
-NodeJS@2025
-```
-
-### Invalid
-
-```text
-rohit123
-ROHIT@123
-Password
-```
-
----
-
-## Gender Validation
-
-Allowed values:
-
-```javascript
-const ALLOWED_GENDER_VALUES = [
-  "male",
-  "female",
-  "other",
-];
-```
-
----
-
-# Update Validation
-
-To prevent unauthorized field updates, the application validates all incoming update requests.
-
-```javascript
-const updateValidation = (req) => {
-  const isUpdateAllowed = Object.keys(req.body).every(
-    (eachKey) =>
-      ALLOWED_UPDATE.includes(eachKey)
-  );
-
-  if (!isUpdateAllowed) {
-    throw new Error("Update not allowed");
-  }
-};
-```
-
-### Why?
-
-This prevents users from updating restricted fields such as:
+Restricted fields:
 
 ```text
 email
+password
 number
 gender
-password
 ```
 
-through the generic update endpoint.
+This prevents unauthorized modification of critical user data.
 
 ---
 
-# Error Handling
+## Error Handling
 
-A centralized error handling middleware is implemented.
-
-```javascript
-app.use(errorHandler);
-```
+The application uses centralized error handling middleware.
 
 Handles:
 
-* ValidationError
-* TypeError
-* ReferenceError
-* Generic Errors
+* Validation Errors
+* Mongoose Errors
+* Type Errors
+* Custom Application Errors
 
-### Example Response
+Example:
 
-```text
-Bad request: VALIDATIONERROR
-
-Error Message: Email is not valid
-```
-
----
-
-# Mongoose Features Used
-
-### Required Fields
-
-```javascript
-required: true
-```
-
-### Unique Constraints
-
-```javascript
-unique: true
-```
-
-### Minimum Age Validation
-
-```javascript
-min: 18
-```
-
-### String Formatting
-
-```javascript
-lowercase: true
-trim: true
-```
-
-### Automatic Timestamps
-
-```javascript
+```json
 {
-  timestamps: true
+  "message": "Email is already in use"
 }
 ```
 
-Automatically generates:
+---
 
-```javascript
-createdAt
-updatedAt
-```
+## Mongoose Features Implemented
+
+* Schema Design
+* Custom Validators
+* Required Fields
+* Unique Constraints
+* Default Values
+* Min Validation
+* String Normalization
+* Timestamps
+* runValidators on Updates
 
 ---
 
-# Future Improvements
+## Future Enhancements
 
+* Password Hashing (bcrypt)
 * JWT Authentication
-* Password Hashing using bcrypt
-* User Login API
+* Login & Logout APIs
+* Authorization Middleware
 * User Profile API
 * Pagination
-* Rate Limiting
+* Search & Filtering
 * Swagger Documentation
-* Role-Based Authorization
+* Rate Limiting
 * Refresh Tokens
+* Role-Based Access Control
 
 ---
 
-# Learning Outcomes
+## Key Learning Outcomes
 
-This project helped in understanding:
+Through this project I gained hands-on experience with:
 
-* Express Routing
 * REST API Design
+* Express Routing
 * MongoDB CRUD Operations
-* Mongoose Schema Validation
-* Custom Validators
-* Error Handling Middleware
-* Route-Level Validation
+* Mongoose Models & Schemas
+* Middleware Architecture
+* Data Validation
+* Error Handling
 * Modular Project Structure
-* Backend Best Practices
+* Backend Development Best Practices
 
 ---
 
-# Author
+## Author
 
 **Rohit Gorain**
 
-B.Pharm Graduate | MERN Stack Developer | Learning Backend Development with Node.js, Express.js, MongoDB, and Mongoose.
+B.Pharm Graduate transitioning into Software Development.
+
+Currently learning and building projects using:
+
+* Node.js
+* Express.js
+* MongoDB
+* React
+* MERN Stack

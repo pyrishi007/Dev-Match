@@ -10,7 +10,7 @@ const clientSchema = new mongoose.Schema(
   {
     firstname: {
       type: String,
-      required: true
+      required: true,
     },
 
     lastname: {
@@ -31,7 +31,7 @@ const clientSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true, //THis field is required
-      unique: true, //No duplicate is allowed
+      // unique: true, //No duplicate is allowed
       lowercase: true, //Should always be in lower case
       trim: true, //no white spaces from sides are allowed
 

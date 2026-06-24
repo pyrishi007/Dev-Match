@@ -4,7 +4,7 @@ const Client = require("./models/user.model");
 const conenctDB = require("./config/database");
 const dns = require("dns/promises");
 const { errorMonitor } = require("events");
-const { validateSignUpData, updateValidation } = require("./Utils/validations");
+const { SignUpValidation, updateValidation } = require("./Utils/validations");
 
 // Setting up DNS locally
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
@@ -18,8 +18,9 @@ app.use(express.json());
 //post /user
 app.post("/user", async (req, res, next) => {
   // Validation for registering user
-  validateSignUpData(req);
+  await SignUpValidation(req);
 
+  //
   try {
     const user = await Client(req.body).save();
     res.send(user);
@@ -32,16 +33,27 @@ app.post("/user", async (req, res, next) => {
 app.get("/user", async (req, res, next) => {
   try {
     const allFeedUser = await Client.find();
+
     res.send(allFeedUser);
   } catch (err) {
     next(err);
   }
 });
 
-//get /user/:userId
-app.get("/user/:userId", async (req, res, next) => {
+// get /user/id/:userId
+app.get("/user/id/:userId", async (req, res, next) => {
   try {
     const user = await Client.findById(req.params.userId);
+    res.send(user);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// get /user/email/:userEmail
+app.get("/user/email/:userEmail", async (req, res, next) => {
+  try {
+    const user = await Client.findOne({ email: req.params.userEmail });
     res.send(user);
   } catch (err) {
     next(err);
@@ -77,7 +89,6 @@ app.patch("/user/:userId", async (req, res, next) => {
 
 // Global error Handler
 app.use(errorHandler);
-// Restricting updates for user
 
 //DB connection
 conenctDB()
