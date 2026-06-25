@@ -43,7 +43,7 @@ This is a RESTful backend API built with **Node.js**, **Express.js**, and **Mong
 
 ```
 project-root/
-├── app.js                  # Entry point — Express app, routes, server bootstrap
+├── server.js               # Entry point — Express app, routes, server bootstrap
 ├── config/
 │   └── database.js         # MongoDB connection logic
 ├── middleware/
@@ -51,7 +51,7 @@ project-root/
 ├── models/
 │   └── user.model.js       # Mongoose schema and model (Client)
 └── Utils/
-    ├── CONSTANTS.js         # Regex patterns and allowed value lists
+    ├── CONSTANTS.js        # Regex patterns and allowed value lists
     ├── password.js          # Password hashing utility (bcrypt)
     └── validations.js       # Application-level validation functions
 ```
