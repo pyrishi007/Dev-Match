@@ -1,9 +1,10 @@
 const { ALLOWED_UPDATE } = require("./CONSTANTS");
 const validator = require("validator");
 const Client = require("../models/user.model");
+const bcrypt = require("bcrypt");
 
-//post
-const SignUpValidation = async (req) => {
+//auth/register
+const validateRegistrationData = async (req) => {
   //Validation checklist
   const { firstname, lastname, password, profileURL, email } = req.body;
 
@@ -40,7 +41,7 @@ const SignUpValidation = async (req) => {
 };
 
 //patch
-const updateValidation = (req) => {
+const validateUpdateData = (req) => {
   //Checks for updates which are allowed
   const isUpdateAllowed = Object.keys(req.body).every((eachKey) =>
     ALLOWED_UPDATE.includes(eachKey),
@@ -52,7 +53,24 @@ const updateValidation = (req) => {
   }
 };
 
+//auth/login
+const authenticateUser = async (password, email) => {
+  if (email && validator.isEmail(email)) {
+    const user = await Client.findOne({ email: email });
+
+    if (!user) throw new Error("Incorrect email or password");
+
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
+
+    //return true or false
+    return isPasswordMatch;
+  } else {
+    throw new Error("Incorrect email or password");
+  }
+};
+
 module.exports = {
-  updateValidation,
-  SignUpValidation,
+  validateUpdateData,
+  validateRegistrationData,
+  authenticateUser,
 };

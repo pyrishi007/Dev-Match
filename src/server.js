@@ -5,7 +5,11 @@ const conenctDB = require("./config/database");
 const dns = require("dns/promises");
 const encrptPassword = require("./Utils/password");
 const { errorMonitor } = require("events");
-const { SignUpValidation, updateValidation } = require("./Utils/validations");
+const {
+  validateRegistrationData,
+  validateUpdateData,
+  authenticateUser,
+} = require("./Utils/validations");
 
 // Setting up DNS locally
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
@@ -16,8 +20,8 @@ const PORT = 4000;
 //JSON -> JS object
 app.use(express.json());
 
-//post /user
-app.post("/user", async (req, res, next) => {
+//post /auth/register
+app.post("/auth/register", async (req, res, next) => {
   //Extracting SignUp data
   const {
     firstname,
@@ -34,7 +38,7 @@ app.post("/user", async (req, res, next) => {
 
   try {
     //Validation checks for SignUp
-    await SignUpValidation(req);
+    await validateRegistrationData(req);
 
     //Password hashing & encryption
     const hashPassword = await encrptPassword(req.body.password);
@@ -53,6 +57,22 @@ app.post("/user", async (req, res, next) => {
       skills,
     }).save();
     res.send(user);
+  } catch (err) {
+    next(err);
+  }
+});
+
+//post /auth/login'
+app.post("/auth/login", async (req, res, next) => {
+  const { password, email } = req?.body;
+
+  try {
+    //check for login data
+    const isAuthenticated = await authenticateUser(password, email);
+
+    if (!isAuthenticated) throw new Error("Invalid password");
+
+    res.send("Login successfull");
   } catch (err) {
     next(err);
   }
@@ -103,7 +123,7 @@ app.delete("/user/:id", async (req, res, next) => {
 app.patch("/user/:id", async (req, res, next) => {
   try {
     //Validation checks for ALLOWED_UPDATE
-    updateValidation(req);
+    validateUpdateData(req);
 
     const updatedClient = await Client.findByIdAndUpdate(
       req.params.id,
