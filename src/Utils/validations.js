@@ -64,9 +64,9 @@ const authenticateUser = async (password, email) => {
 
     //return true or false
     return isPasswordMatch;
-  } else {
-    throw new Error("Incorrect email or password");
   }
+
+  throw new Error("Incorrect email or password");
 };
 
 module.exports = {
