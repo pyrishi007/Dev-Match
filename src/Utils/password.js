@@ -1,9 +1,10 @@
+// ---LIBRARY IMPORT---
 const bcrypt = require("bcrypt");
 
-const encrptPassword = async (clientPassowrd) => {
-  //function return hash passowrd
-  const hashPassword = await bcrypt.hash(clientPassowrd, 10);
+// PASSWORD HASHING & ENCRYPTION
+const encryptPassword = async (clientPassword) => {
+  const hashPassword = await bcrypt.hash(clientPassword, 10);
   return hashPassword;
 };
 
-module.exports = encrptPassword;
+module.exports = encryptPassword;

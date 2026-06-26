@@ -1,11 +1,12 @@
+// ---LIBRARY IMPORT---
 const mongoose = require("mongoose");
-const {
-  NUMBEREGEX,
-  EMAILREGEX,
-  PASSWORD_REGEX,
-  ALLOWED_GENDER_VALUES,
-} = require("../Utils/CONSTANTS");
+const validator = require("validator");
 
+// ---UTILTY---
+const { NUMBEREGEX, ALLOWED_GENDER_VALUES } = require("../Utils/CONSTANTS");
+
+// DB SCHEMA DESIGN
+// SCHEMA LEVEL VALDATION CHECKS TO REMOVE POLLUTED DATA
 const clientSchema = new mongoose.Schema(
   {
     firstname: {
@@ -26,7 +27,7 @@ const clientSchema = new mongoose.Schema(
       required: true,
       unique: true,
 
-      //10-Digit number validation
+      //SCHEMA LEVEL - NUMBER VALIDATION
       validate(value) {
         if (!NUMBEREGEX.test(value)) throw new Error("Not valid");
       },
@@ -34,14 +35,13 @@ const clientSchema = new mongoose.Schema(
 
     email: {
       type: String,
-      required: true, //THis field is required
-      // unique: true, //No duplicate is allowed
-      lowercase: true, //Should always be in lower case
-      trim: true, //no white spaces from sides are allowed
+      required: true,
+      lowercase: true,
+      trim: true,
 
-      // Strict validation for email
+      //SCHEMA LEVEL - EMAIL VALIDATION
       validate(value) {
-        if (!EMAILREGEX.test(value)) throw new Error("Not valid");
+        if (!validator.isEmail(value)) throw new Error("Not valid");
       },
     },
 
@@ -53,15 +53,16 @@ const clientSchema = new mongoose.Schema(
     age: {
       type: Number,
       required: true,
-      min: 18, //minimum age value should be 18 or above
+
+      // MINIMUM AGE DATA = >18
+      min: 18,
     },
 
     gender: {
       type: String,
       required: true,
 
-      // always remember that validation always works first time when the data is saving it cannot be done when wiht patch or put, we have to use option is that case
-      // making custom validation for gender
+      // SCHEMA LEVEL - GENDER VALIDATION
       validate(value) {
         if (!ALLOWED_GENDER_VALUES.includes(value.toLowerCase()))
           throw new Error("Gender data is invalid");
@@ -70,11 +71,13 @@ const clientSchema = new mongoose.Schema(
 
     profileURL: {
       type: String,
-      default: "URL", //Default behviour is added
+
+      // DEAFULT URL FOR PROFILE
+      default: "URL",
     },
 
     skills: {
-      type: [String], //Can be added mutltiple String
+      type: [String],
     },
   },
   { timestamps: true },
@@ -83,5 +86,3 @@ const clientSchema = new mongoose.Schema(
 const Client = mongoose.model("Client", clientSchema);
 
 module.exports = Client;
-
-// Why this ata validation is important is because to avoid any polluted data to enter into the DB

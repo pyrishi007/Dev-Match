@@ -1,25 +1,32 @@
+// --EXPRESS--
 const express = require("express");
-const errorHandler = require("./middleware/errorHandler");
+
+// --UTILITY IMPORTS--
 const Client = require("./models/user.model");
-const conenctDB = require("./config/database");
-const dns = require("dns/promises");
-const encrptPassword = require("./Utils/password");
+const connectDB = require("./config/database");
+const encryptPassword = require("./Utils/password");
+const errorHandler = require("./middleware/errorHandler");
 const { errorMonitor } = require("events");
+
+// ---HELPER FUNCTION IMPORTS---
 const {
   validateRegistrationData,
   validateUpdateData,
   authenticateUser,
 } = require("./Utils/validations");
 
-// Setting up DNS locally
+// --SETING DNS LOCALLY--
+const dns = require("dns/promises");
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
+// --BASIC CONFIG SETUP--
 const app = express();
 const PORT = 4000;
 
 //JSON -> JS object
 app.use(express.json());
 
+//  ------- AUTH ROUTES ------
 //post /auth/register
 app.post("/auth/register", async (req, res, next) => {
   //Extracting SignUp data
@@ -41,7 +48,7 @@ app.post("/auth/register", async (req, res, next) => {
     await validateRegistrationData(req);
 
     //Password hashing & encryption
-    const hashPassword = await encrptPassword(req.body.password);
+    const hashPassword = await encryptPassword(req.body.password);
 
     //Final data storing
     const user = await Client({
@@ -70,14 +77,14 @@ app.post("/auth/login", async (req, res, next) => {
     //check for login data
     const isAuthenticated = await authenticateUser(password, email);
 
-    if (!isAuthenticated) throw new Error("Invalid password");
-
     res.send("Login successfull");
   } catch (err) {
     next(err);
   }
 });
 
+
+// ------ PROTECTED ROUTES -------
 //get /user
 app.get("/user", async (req, res, next) => {
   try {
@@ -139,8 +146,8 @@ app.patch("/user/:id", async (req, res, next) => {
 // Global error Handler
 app.use(errorHandler);
 
-//DB connection
-conenctDB()
+// ---- DB CONNECTION ----
+connectDB()
   .then(() => {
     console.log("DB connection successfull");
     app.listen(PORT, () => {

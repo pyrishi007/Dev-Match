@@ -1,5 +1,7 @@
+//----GLOBAL ERROR HANDLER----
 const errorHandler = (err, req, res, next) => {
-  if (err.name == "ValidationError") {
+  //VALIDATION ERROR
+  if (err.name === "ValidationError") {
     return res
       .status(400)
       .send(
@@ -7,7 +9,8 @@ const errorHandler = (err, req, res, next) => {
       );
   }
 
-  if (err.name == "TypeError") {
+  //TYPE ERROR
+  if (err.name === "TypeError") {
     return res
       .status(500)
       .send(
@@ -15,7 +18,8 @@ const errorHandler = (err, req, res, next) => {
       );
   }
 
-  if (err.name == "ReferenceError") {
+  //REFERENCE ERROR
+  if (err.name === "ReferenceError") {
     return res
       .status(500)
       .send(
@@ -23,10 +27,20 @@ const errorHandler = (err, req, res, next) => {
       );
   }
 
-  //Anonymous error-handler
+  //CAST ERROR
+  if (err.name === "CastError") {
+    return res.status(400).send(`Bad Request: Invalid ${err.path}`);
+  }
+
+  //DUPLICATE VALUE ERROR
+  if (err.code === 11000) {
+    return res.status(409).send("Duplicate data already exists.");
+  }
+
+  //GENROIC ERROR
   return res
     .status(500)
-    .send(`Error:  ${err.name.toUpperCase()} \n Error Message: ${err.message}`);
+    .send(`Error: ${err.name.toUpperCase()} \n Error Message: ${err.message}`);
 };
 
 module.exports = errorHandler;
