@@ -1,14 +1,17 @@
-// --EXPRESS--
+// --LIBRARY IMPORTS--
+const jwt = require("jsonwebtoken");
 const express = require("express");
+const cookieParser = require("cookie-parser");
+require("dotenv").config();
 
-// --UTILITY IMPORTS--
+// ---MIDDLEWARE---
+const errorHandler = require("./middleware/errorHandler");
+const verifyToken = require("./middleware/userAuth");
+
+// --UTILITY & HELPER FUNCTION IMPORTS--
 const Client = require("./models/user.model");
 const connectDB = require("./config/database");
-const encryptPassword = require("./Utils/password");
-const errorHandler = require("./middleware/errorHandler");
-const { errorMonitor } = require("events");
-
-// ---HELPER FUNCTION IMPORTS---
+const { encryptPassword } = require("./Utils/password");
 const {
   validateRegistrationData,
   validateUpdateData,
@@ -23,10 +26,15 @@ dns.setServers(["1.1.1.1", "8.8.8.8"]);
 const app = express();
 const PORT = 4000;
 
-//JSON -> JS object
+//MIDDLEWARE
+//ELIGIBLE FOR ALL ROUTES
 app.use(express.json());
+app.use(cookieParser());
 
-//  ------- AUTH ROUTES ------
+//VERIFY /user/n ROUTEs FOR JWT TOKEN
+app.use("/user", verifyToken);
+
+//-------AUTH ROUTES------
 //post /auth/register
 app.post("/auth/register", async (req, res, next) => {
   //Extracting SignUp data
@@ -69,24 +77,28 @@ app.post("/auth/register", async (req, res, next) => {
   }
 });
 
-//post /auth/login'
+//post /auth/login
 app.post("/auth/login", async (req, res, next) => {
   const { password, email } = req?.body;
 
   try {
     //check for login data
-    const isAuthenticated = await authenticateUser(password, email);
+    const user = await authenticateUser(password, email);
 
-    res.send("Login successfull");
+    //JWT CREATION
+    const token = await jwt.sign({ _id: user._id }, process.env.JWT_SECRET_KEY);
+
+    // JWT INSIDE COOKIE
+    res.cookie("token", token);
+    res.status(200).send("Login successfull");
   } catch (err) {
     next(err);
   }
 });
 
-
 // ------ PROTECTED ROUTES -------
 //get /user
-app.get("/user", async (req, res, next) => {
+app.get("/users", async (req, res, next) => {
   try {
     const allFeedUser = await Client.find();
 
@@ -96,48 +108,10 @@ app.get("/user", async (req, res, next) => {
   }
 });
 
-// get /user/id/:userId
-app.get("/user/id/:id", async (req, res, next) => {
+// get /user/profile
+app.get("/user/profile", (req, res, next) => {
   try {
-    const user = await Client.findById(req.params.id);
-    res.send(user);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// get /user/email/:userEmail
-app.get("/user/email/:email", async (req, res, next) => {
-  try {
-    const user = await Client.findOne({ email: req.params.email });
-    res.send(user);
-  } catch (err) {
-    next(err);
-  }
-});
-
-//delete /user/:userId
-app.delete("/user/:id", async (req, res, next) => {
-  try {
-    const deletedUser = await Client.findByIdAndDelete(req.params.id);
-    res.send(`User successfully deleted : ${deletedUser}`);
-  } catch (err) {
-    next(err);
-  }
-});
-
-//patch /user/:id
-app.patch("/user/:id", async (req, res, next) => {
-  try {
-    //Validation checks for ALLOWED_UPDATE
-    validateUpdateData(req);
-
-    const updatedClient = await Client.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { returnDocument: "after", runValidators: true },
-    );
-    res.send(updatedClient);
+    res.status(200).send(req.user);
   } catch (err) {
     next(err);
   }

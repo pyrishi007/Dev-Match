@@ -47,14 +47,14 @@ const authenticateUser = async (password, email) => {
     const user = await Client.findOne({ email: email });
 
     //THROW ERROR WITH TF NO USER MATCH
-    if (!user) throw new Error("Incorrect email or password");
+    if (!user) throw new Error("User not found");
 
     const isPasswordMatch = await bcrypt.compare(password, user.password);
 
     // THROW ERROR IF PASSWORD DOESNT MATCH
-    if (!isPasswordMatch) throw new Error("Invalid password");
+    if (!isPasswordMatch) throw new Error("Incorrect email or password");
 
-    return isPasswordMatch;
+    return user;
   }
 
   throw new Error("Incorrect email or password");

@@ -1,5 +1,6 @@
 // ---LIBRARY IMPORT---
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 // PASSWORD HASHING & ENCRYPTION
 const encryptPassword = async (clientPassword) => {
@@ -7,4 +8,6 @@ const encryptPassword = async (clientPassword) => {
   return hashPassword;
 };
 
-module.exports = encryptPassword;
+module.exports = {
+  encryptPassword,
+};

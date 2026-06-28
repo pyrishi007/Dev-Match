@@ -17,9 +17,10 @@
 6. [Validation Rules](#validation-rules)
 7. [API Endpoints](#api-endpoints)
 8. [Error Handling](#error-handling)
-9. [Constants & Configuration](#constants--configuration)
-10. [Security Considerations](#security-considerations)
-11. [Known Limitations & Improvements](#known-limitations--improvements)
+9. [JWT Authentication Flow](#jwt-authentication-flow)
+10. [Constants & Configuration](#constants--configuration)
+11. [Security Considerations](#security-considerations)
+12. [Known Limitations & Improvements](#known-limitations--improvements)
 
 ---
 
@@ -475,6 +476,107 @@ Duplicate data already exists.
 Error: ERROR
 Error Message: Update not allowed
 ```
+
+---
+
+## JWT Authentication Flow
+
+JWT (JSON Web Token) based authentication works in two distinct phases:
+
+### Phase 1 — Authentication (JWT Creation)
+
+This is the login flow. The client sends credentials, the server validates them, and if successful, issues a JWT token back to the client.
+
+```
+Client                          Server
+  │                               │
+  │──── POST /auth/login ────────▶│
+  │        { email, password }    │
+  │                               │  Step 1: email & password validation
+  │                               │          (format check → DB lookup → bcrypt.compare)
+  │                               │
+  │                               │  Step 2: JWT token created on success
+  │                               │
+  │◀─── response + JWT token ─────│
+  │         (stored in cookie)    │
+```
+
+**What happens on the server (Step 1 → Step 2):**
+
+1. Validate email format via `validator.isEmail()`
+2. Look up user in DB by email — throw error if not found
+3. Compare submitted password against stored bcrypt hash
+4. On success — sign and return a JWT token (to be implemented)
+
+---
+
+### Phase 2 — JWT Validation (Protected Route Access)
+
+Once the client has a token (stored in browser cookie), every subsequent request to a protected route must include it. The server verifies the token on each request.
+
+```
+Client (browser)                 Server
+  │                               │
+  │  Cookie: JWT token stored     │
+  │                               │
+  │──── Request + JWT token ─────▶│
+  │                               │  JWT token verify
+  │                               │       │
+  │                               │  ┌────┴────┐
+  │                               │  │         │
+  │                               │ FAIL      VERIFIED
+  │                               │  │         │
+  │◀─── re-login required ────────│  │         │
+  │◀─── Successful response ──────│──────────▶│
+```
+
+**Token verification logic (to be added as middleware):**
+
+```javascript
+// src/middleware/auth.js
+const jwt = require("jsonwebtoken");
+
+const verifyToken = (req, res, next) => {
+  // Extract token from cookie or Authorization header
+  const token = req.cookies?.token || req.headers.authorization?.split(" ")[1];
+
+  if (!token) return res.status(401).send("Access denied. Please log in.");
+
+  try {
+    // Verify signature and expiry
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // attach user payload to request
+    next();
+  } catch (err) {
+    return res.status(401).send("Invalid or expired token. Please re-login.");
+  }
+};
+
+module.exports = verifyToken;
+```
+
+**Protecting routes with this middleware:**
+
+```javascript
+const verifyToken = require("./middleware/auth");
+
+// All /user/* routes require a valid JWT
+app.get("/user", verifyToken, async (req, res, next) => { ... });
+app.get("/user/id/:id", verifyToken, async (req, res, next) => { ... });
+app.patch("/user/:id", verifyToken, async (req, res, next) => { ... });
+app.delete("/user/:id", verifyToken, async (req, res, next) => { ... });
+```
+
+---
+
+### Summary Table
+
+| Phase | Route | What Happens |
+|---|---|---|
+| Authentication | `POST /auth/login` | Credentials validated → JWT issued → stored in client cookie |
+| JWT Validation | `GET /user`, `PATCH /user/:id`, etc. | Token extracted → verified → request allowed or rejected |
+
+> **Current Status:** Authentication phase (`POST /auth/login`) is implemented. JWT creation and the validation middleware are planned — see [Known Limitations & Improvements](#known-limitations--improvements).
 
 ---
 
