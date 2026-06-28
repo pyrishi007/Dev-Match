@@ -1,12 +1,15 @@
-// ---LIBRARY IMPORT---
+//---LIBRARY IMPORT---
 const mongoose = require("mongoose");
 const validator = require("validator");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+require("dotenv").config();
 
-// ---UTILTY---
+//---UTILTY---
 const { NUMBEREGEX, ALLOWED_GENDER_VALUES } = require("../Utils/CONSTANTS");
 
-// DB SCHEMA DESIGN
-// SCHEMA LEVEL VALDATION CHECKS TO REMOVE POLLUTED DATA
+//DB SCHEMA DESIGN
+//SCHEMA LEVEL VALDATION CHECKS TO REMOVE POLLUTED DATA
 const clientSchema = new mongoose.Schema(
   {
     firstname: {
@@ -82,6 +85,21 @@ const clientSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+//SCHEMA METHODS
+//JWT TOKEN CREATION
+clientSchema.methods.genrateJWT = async function () {
+  const token = await jwt.sign({ _id: this._id }, process.env.JWT_SECRET_KEY, {
+    expiresIn: "1d", //token will get expire in 1 day
+  });
+  return token;
+};
+
+//BCYPT PASSWORD COMPARE
+clientSchema.methods.checkPassword = function (unHashedPassowrd) {
+  const isValid = bcrypt.compare(unHashedPassowrd, this.password);
+  return isValid;
+};
 
 const Client = mongoose.model("Client", clientSchema);
 

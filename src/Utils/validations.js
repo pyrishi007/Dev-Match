@@ -49,7 +49,8 @@ const authenticateUser = async (password, email) => {
     //THROW ERROR WITH TF NO USER MATCH
     if (!user) throw new Error("User not found");
 
-    const isPasswordMatch = await bcrypt.compare(password, user.password);
+    //SCHEMA-METHOD
+    const isPasswordMatch = user.checkPassword(password);
 
     // THROW ERROR IF PASSWORD DOESNT MATCH
     if (!isPasswordMatch) throw new Error("Incorrect email or password");

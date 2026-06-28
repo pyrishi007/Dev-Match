@@ -2,7 +2,6 @@
 const jwt = require("jsonwebtoken");
 const express = require("express");
 const cookieParser = require("cookie-parser");
-require("dotenv").config();
 
 // ---MIDDLEWARE---
 const errorHandler = require("./middleware/errorHandler");
@@ -86,7 +85,7 @@ app.post("/auth/login", async (req, res, next) => {
     const user = await authenticateUser(password, email);
 
     //JWT CREATION
-    const token = await jwt.sign({ _id: user._id }, process.env.JWT_SECRET_KEY);
+    const token = await user.genrateJWT();
 
     // JWT INSIDE COOKIE
     res.cookie("token", token);
@@ -101,7 +100,6 @@ app.post("/auth/login", async (req, res, next) => {
 app.get("/users", async (req, res, next) => {
   try {
     const allFeedUser = await Client.find();
-
     res.send(allFeedUser);
   } catch (err) {
     next(err);

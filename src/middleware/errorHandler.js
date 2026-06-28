@@ -37,10 +37,24 @@ const errorHandler = (err, req, res, next) => {
     return res.status(409).send("Duplicate data already exists.");
   }
 
+  if (err.name === "JsonWebTokenError") {
+    return res
+      .status(500)
+      .send(`Error: ${err.name} \n Error Message: ${err.message}`);
+  }
+
+  if (err.name === "TokenExpiredError") {
+    return res
+      .status(500)
+      .send(
+        `Error: ${err.name} \n Error Message: Session expired! Retry Login`,
+      );
+  }
+
   //GENROIC ERROR
   return res
     .status(500)
-    .send(`Error: ${err.name.toUpperCase()} \n Error Message: ${err.message}`);
+    .send(`Error: ${err.name} \n Error Message: ${err.message}`);
 };
 
 module.exports = errorHandler;
