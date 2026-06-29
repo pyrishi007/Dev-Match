@@ -96,8 +96,8 @@ clientSchema.methods.genrateJWT = async function () {
 };
 
 //BCYPT PASSWORD COMPARE
-clientSchema.methods.checkPassword = function (unHashedPassowrd) {
-  const isValid = bcrypt.compare(unHashedPassowrd, this.password);
+clientSchema.methods.checkPassword = async function (unHashedPassowrd) {
+  const isValid = await bcrypt.compare(unHashedPassowrd, this.password);
   return isValid;
 };
 

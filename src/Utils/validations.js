@@ -2,6 +2,7 @@
 const bcrypt = require("bcrypt");
 const validator = require("validator");
 
+ 
 // --UTILITY---
 const Client = require("../models/user.model");
 const { ALLOWED_UPDATE } = require("./CONSTANTS");
@@ -50,8 +51,8 @@ const authenticateUser = async (password, email) => {
     if (!user) throw new Error("User not found");
 
     //SCHEMA-METHOD
-    const isPasswordMatch = user.checkPassword(password);
-
+    const isPasswordMatch = await user.checkPassword(password);
+    
     // THROW ERROR IF PASSWORD DOESNT MATCH
     if (!isPasswordMatch) throw new Error("Incorrect email or password");
 

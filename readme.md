@@ -680,3 +680,10 @@ const users = await Client.find()
   .skip((page - 1) * limit)
   .limit(Number(limit));
 ```
+
+
+### API end points
+
+`POST /auth/register`
+`POST /auth/login`
+`POST /auth/logout`
