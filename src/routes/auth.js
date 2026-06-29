@@ -72,5 +72,18 @@ authRouter.post("/auth/login", async (req, res, next) => {
     next(err);
   }
 });
+//post /auth/logout
+authRouter.post("/auth/logout", async (req, res, next) => {
+  try {
+    //explicitly expiring the cookie, as null
+    //cookie = "token" as key : null as value so JWT became as null
+    res.cookie("token", null, {
+      expires: new Date(Date.now()), //Current time, ongoing pressent time
+    });
+    res.send("Successfully Logout!");
+  } catch (err) {
+    next(err);
+  }
+});
 
 module.exports = authRouter;
