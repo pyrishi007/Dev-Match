@@ -101,6 +101,13 @@ clientSchema.methods.checkPassword = async function (unHashedPassowrd) {
   return isValid;
 };
 
+//PROFILE EDIT
+clientSchema.methods.editData = function (updateData) {
+  Object.keys(updateData).forEach(
+    (eachFieldValue) => (this[eachFieldValue] = updateData[eachFieldValue]),
+  );
+};
+
 const Client = mongoose.model("Client", clientSchema);
 
 module.exports = Client;
