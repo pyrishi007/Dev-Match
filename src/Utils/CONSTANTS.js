@@ -7,12 +7,12 @@ const PASSWORD_REGEX =
 
 const ALLOWED_GENDER_VALUES = ["male", "female", "other"];
 
-const ALLOWED_UPDATE = ["firstname","lastname", "age", "profileURL", "skills"]
+const ALLOWED_UPDATE = ["firstname", "lastname", "age", "profileURL", "skills"];
 
 module.exports = {
   NUMBEREGEX,
   EMAILREGEX,
   PASSWORD_REGEX,
   ALLOWED_GENDER_VALUES,
-  ALLOWED_UPDATE
+  ALLOWED_UPDATE,
 };

@@ -63,7 +63,39 @@ const authenticateUser = async (password, email) => {
   throw new Error("Incorrect email or password");
 };
 
+//PASSWORD VALIDATION
+const forgetDataValidation = async (email, newPassword) => {
+  if (email && !validator.isEmail(email))
+    throw new Error("Incorrect credentials");
+
+  if (newPassword && !validator.isStrongPassword(newPassword))
+    throw new Error("Password should be stronge");
+
+  const user = await Client.findOne({ email: email });
+
+  if (!user) throw new Error("Invalid credentials");
+
+  return user;
+};
+
+const resetDataValidation = async (token, newPassword) => {
+  if (newPassword && !validator.isStrongPassword(newPassword))
+    throw new Error("Password should be stronge");
+
+  if (token) {
+    const user = await Client.findOne({ passwordToken: token });
+
+    if (!user) throw new Error("Invalid credentials");
+
+    return user;
+  } else {
+    throw new Error("Invalid token");
+  }
+};
+
 module.exports = {
+  forgetDataValidation,
+  resetDataValidation,
   validateEditData,
   validateRegistrationData,
   authenticateUser,

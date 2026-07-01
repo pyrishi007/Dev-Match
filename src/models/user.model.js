@@ -82,6 +82,10 @@ const clientSchema = new mongoose.Schema(
     skills: {
       type: [String],
     },
+
+    passwordToken: {
+      type: "String",
+    },
   },
   { timestamps: true },
 );
@@ -102,10 +106,27 @@ clientSchema.methods.checkPassword = async function (unHashedPassowrd) {
 };
 
 //PROFILE EDIT
-clientSchema.methods.editData = function (updateData) {
+clientSchema.methods.editData = async function (updateData) {
+  const user = this;
   Object.keys(updateData).forEach(
-    (eachFieldValue) => (this[eachFieldValue] = updateData[eachFieldValue]),
+    //user[age] = req.body[age]
+    (eachFieldValue) => (user[eachFieldValue] = updateData[eachFieldValue]),
   );
+
+  await user.save();
+};
+
+//SAVVE PASSWORD TOKEN TO DB
+clientSchema.methods.saveToken = async function (token) {
+  this.passwordToken = token;
+  this.save();
+};
+
+//VERIFY PASSWORD TOKEN WITH DB
+clientSchema.methods.verifyToken = async function (token) {
+  if (!this.passwordToken === token) throw new Error("Re-enter token");
+
+  return;
 };
 
 const Client = mongoose.model("Client", clientSchema);
